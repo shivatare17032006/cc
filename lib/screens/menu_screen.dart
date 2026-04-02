@@ -14,9 +14,45 @@ class _MenuScreenState extends State<MenuScreen> {
   bool _isLoading = true;
   String? _error;
 
+  static const Map<String, String> _itemImageMap = {
+    'sabudana vada': 'https://images.unsplash.com/photo-1505253758473-96b7015fcd40?auto=format&fit=crop&w=1200&q=80',
+    'vada pav': 'https://images.unsplash.com/photo-1606491048164-fad4a855d1f1?auto=format&fit=crop&w=1200&q=80',
+    'bread pattis': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1200&q=80',
+    'idli': 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=1200&q=80',
+    'rava paratha': 'https://images.unsplash.com/photo-1619021693030-3d50d0b5dbf0?auto=format&fit=crop&w=1200&q=80',
+    'aloo paratha': 'https://images.unsplash.com/photo-1626074353765-517a681e40be?auto=format&fit=crop&w=1200&q=80',
+    'methi paratha': 'https://images.unsplash.com/photo-1619021419847-d8a7a6aba5b4?auto=format&fit=crop&w=1200&q=80',
+    'palak paratha': 'https://images.unsplash.com/photo-1626074353764-517a681e40be?auto=format&fit=crop&w=1200&q=80',
+    'sandwich': 'https://images.unsplash.com/photo-1528736235302-52922df5c122?auto=format&fit=crop&w=1200&q=80',
+    'bajra paratha': 'https://images.unsplash.com/photo-1619021419847-d8a7a6aba5b4?auto=format&fit=crop&w=1200&q=80',
+    'paneer paratha': 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=1200&q=80',
+    'dhokla': 'https://images.unsplash.com/photo-1601050690117-94f5f6fa3bd2?auto=format&fit=crop&w=1200&q=80',
+    'plain lassi': 'https://images.unsplash.com/photo-1623428454614-abaf00244e52?auto=format&fit=crop&w=1200&q=80',
+    'mango lassi': 'https://images.unsplash.com/photo-1623428454614-abaf00244e52?auto=format&fit=crop&w=1200&q=80',
+    'watermelon juice': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?auto=format&fit=crop&w=1200&q=80',
+    'papaya juice': 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=1200&q=80',
+    'orange juice': 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=1200&q=80',
+    'guava juice': 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=1200&q=80',
+    'mosambi juice': 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=1200&q=80',
+    'limbu sarbat': 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=1200&q=80',
+    'mango rabdi': 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=1200&q=80',
+    'plain rabdi': 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=1200&q=80',
+    'mix fruit rabdi': 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=1200&q=80',
+    'cold coffee': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=80',
+    'anjir shake': 'https://images.unsplash.com/photo-1577805947697-89e18249d767?auto=format&fit=crop&w=1200&q=80',
+    'chiku shake': 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=1200&q=80',
+    'oreo shake': 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?auto=format&fit=crop&w=1200&q=80',
+  };
+
   String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(0)}';
 
   String _resolvedImageUrl(FoodItem item) {
+    final itemName = item.name.trim().toLowerCase();
+    final mappedUrl = _itemImageMap[itemName];
+    if (mappedUrl != null && mappedUrl.isNotEmpty) {
+      return mappedUrl;
+    }
+
     final rawUrl = item.imageUrl.trim();
     if (rawUrl.isEmpty) {
       return '';
@@ -25,18 +61,7 @@ class _MenuScreenState extends State<MenuScreen> {
     // source.unsplash can throttle/redirect in a way that often fails in-app.
     // Use a stable, keyword-based image source to keep images food/drink relevant.
     if (rawUrl.contains('source.unsplash.com')) {
-      final name = item.name.toLowerCase();
-      final normalizedName = name.replaceAll(' ', ',');
-      final isDrink = name.contains('juice') ||
-          name.contains('lassi') ||
-          name.contains('shake') ||
-          name.contains('coffee') ||
-          name.contains('sarbat');
-      final tags = isDrink
-          ? 'drink,beverage,$normalizedName'
-          : 'indian,food,$normalizedName';
-      final lock = item.name.hashCode.abs() % 5000;
-      return 'https://loremflickr.com/800/600/$tags?lock=$lock';
+      return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=1200&q=80';
     }
 
     return rawUrl;
