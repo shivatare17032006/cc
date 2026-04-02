@@ -16,13 +16,29 @@ class _MenuScreenState extends State<MenuScreen> {
 
   String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(0)}';
 
+  String _resolvedImageUrl(FoodItem item) {
+    final rawUrl = item.imageUrl.trim();
+    if (rawUrl.isEmpty) {
+      return '';
+    }
+
+    // source.unsplash can throttle/redirect in a way that often fails in-app.
+    if (rawUrl.contains('source.unsplash.com')) {
+      final seed = Uri.encodeComponent(item.name.toLowerCase().replaceAll(' ', '-'));
+      return 'https://picsum.photos/seed/$seed/800/600';
+    }
+
+    return rawUrl;
+  }
+
   Widget _menuImage(FoodItem item) {
-    if (item.imageUrl.trim().isEmpty) {
+    final imageUrl = _resolvedImageUrl(item);
+    if (imageUrl.isEmpty) {
       return _fallbackImage(item);
     }
 
     return Image.network(
-      item.imageUrl,
+      imageUrl,
       height: 128,
       width: double.infinity,
       fit: BoxFit.cover,
