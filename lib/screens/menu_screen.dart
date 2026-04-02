@@ -15,7 +15,7 @@ class _MenuScreenState extends State<MenuScreen> {
   String? _error;
 
   static const Map<String, String> _itemImageMap = {
-    'sabudana vada': 'https://images.unsplash.com/photo-1505253758473-96b7015fcd40?auto=format&fit=crop&w=1200&q=80',
+    'sabudana vada': 'assets/menu/sabudana_vada.jpg',
     'vada pav': 'https://images.unsplash.com/photo-1606491048164-fad4a855d1f1?auto=format&fit=crop&w=1200&q=80',
     'bread pattis': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1200&q=80',
     'idli': 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=1200&q=80',
@@ -67,10 +67,23 @@ class _MenuScreenState extends State<MenuScreen> {
     return rawUrl;
   }
 
+  bool _isAssetPath(String value) =>
+      value.startsWith('assets/') || value.startsWith('packages/');
+
   Widget _menuImage(FoodItem item) {
     final imageUrl = _resolvedImageUrl(item);
     if (imageUrl.isEmpty) {
       return _fallbackImage(item);
+    }
+
+    if (_isAssetPath(imageUrl)) {
+      return Image.asset(
+        imageUrl,
+        height: 128,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _fallbackImage(item),
+      );
     }
 
     return Image.network(
