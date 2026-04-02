@@ -29,6 +29,19 @@ class _MenuScreenState extends State<MenuScreen> {
     'plain lassi': 'assets/menu/plain_lassi.png',
     'watermelon juice': 'assets/menu/watermelon_juice.png',
     'anjir shake': 'assets/menu/anjir_shake.png',
+    'papaya juice': 'assets/menu/papaya_juice.png',
+    'mango lassi': 'assets/menu/mango_lassi.png',
+    'dhokla': 'assets/menu/dhokla.png',
+    'paneer paratha': 'assets/menu/paneer_paratha.png',
+    'bajra paratha': 'assets/menu/bajra_paratha.png',
+    'oreo shake': 'assets/menu/oreo_shake.png',
+    'chiku shake': 'assets/menu/chiku_shake.png',
+    'mix fruit rabdi': 'assets/menu/mix_fruit_rabdi.png',
+    'plain rabdi': 'assets/menu/plain_rabdi.png',
+    'mango rabdi': 'assets/menu/mango_rabdi.png',
+    'limbu sarbat': 'assets/menu/limbu_sarbat.png',
+    'mosambi juice': 'assets/menu/mosambi_juice.png',
+    'guava juice': 'assets/menu/guava_juice.png',
   };
 
   String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(0)}';
