@@ -23,9 +23,20 @@ class _MenuScreenState extends State<MenuScreen> {
     }
 
     // source.unsplash can throttle/redirect in a way that often fails in-app.
+    // Use a stable, keyword-based image source to keep images food/drink relevant.
     if (rawUrl.contains('source.unsplash.com')) {
-      final seed = Uri.encodeComponent(item.name.toLowerCase().replaceAll(' ', '-'));
-      return 'https://picsum.photos/seed/$seed/800/600';
+      final name = item.name.toLowerCase();
+      final normalizedName = name.replaceAll(' ', ',');
+      final isDrink = name.contains('juice') ||
+          name.contains('lassi') ||
+          name.contains('shake') ||
+          name.contains('coffee') ||
+          name.contains('sarbat');
+      final tags = isDrink
+          ? 'drink,beverage,$normalizedName'
+          : 'indian,food,$normalizedName';
+      final lock = item.name.hashCode.abs() % 5000;
+      return 'https://loremflickr.com/800/600/$tags?lock=$lock';
     }
 
     return rawUrl;
