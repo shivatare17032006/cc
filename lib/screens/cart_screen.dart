@@ -14,6 +14,8 @@ class _CartScreenState extends State<CartScreen> {
   bool _isLoading = true;
   String? _error;
 
+  String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(2)}';
+
   @override
   void initState() {
     super.initState();
@@ -126,7 +128,7 @@ class _CartScreenState extends State<CartScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      '\₹${item.price.toStringAsFixed(2)} x ${item.quantity}',
+                      '${_formatRs(item.price)} x ${item.quantity}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -169,7 +171,7 @@ class _CartScreenState extends State<CartScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   spreadRadius: 2,
                   blurRadius: 10,
                 ),
@@ -188,7 +190,7 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     ),
                     Text(
-                      '\₹${_totalPrice.toStringAsFixed(2)}',
+                      _formatRs(_totalPrice),
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -205,7 +207,10 @@ class _CartScreenState extends State<CartScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const PaymentPage(),
+                          builder: (context) => PaymentPage(
+                            totalAmount: _totalPrice,
+                            itemCount: _cartItems.length,
+                          ),
                         ),
                       ).then((_) => _loadCart());
                     },
@@ -236,56 +241,145 @@ class _CartScreenState extends State<CartScreen> {
 
 
 class PaymentPage extends StatelessWidget {
-  const PaymentPage({super.key});
+  const PaymentPage({
+    super.key,
+    required this.totalAmount,
+    required this.itemCount,
+  });
+
+  final double totalAmount;
+  final int itemCount;
+
+  String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(2)}';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Payment'),
+        title: const Text('Payment Gateway'),
         backgroundColor: Colors.orange.shade500,
       ),
       backgroundColor: Colors.orange.shade50,
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Click Pay Now to Complete Payment',
-              style: TextStyle(fontSize: 20),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  await ApiService.placeOrder();
-                  if (!context.mounted) return;
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PaymentCompletePage(),
-                    ),
-                    (route) => false,
-                  );
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString().replaceFirst('Exception: ', '')),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange.shade500,
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  colors: [Colors.deepOrange.shade400, Colors.orange.shade400],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
-              child: const Text(
-                'Pay Now',
-                style: TextStyle(fontSize: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.lock, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text(
+                        'Secure Checkout',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _formatRs(totalAmount),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Items: $itemCount',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Payment Method',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.account_balance_wallet_outlined),
+                    title: Text('UPI / Wallet'),
+                    trailing: Icon(Icons.check_circle, color: Colors.green),
+                  ),
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.credit_card),
+                    title: Text('Card / Net Banking'),
+                    trailing: Icon(Icons.chevron_right),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    await ApiService.placeOrder();
+                    if (!context.mounted) return;
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PaymentCompletePage(
+                          paidAmount: totalAmount,
+                        ),
+                      ),
+                      (route) => false,
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString().replaceFirst('Exception: ', '')),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.lock_outline),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade500,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                label: Text(
+                  'Pay ${_formatRs(totalAmount)}',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -297,7 +391,14 @@ class PaymentPage extends StatelessWidget {
 
 
 class PaymentCompletePage extends StatelessWidget {
-  const PaymentCompletePage({super.key});
+  const PaymentCompletePage({
+    super.key,
+    required this.paidAmount,
+  });
+
+  final double paidAmount;
+
+  String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(2)}';
 
   @override
   Widget build(BuildContext context) {
@@ -311,14 +412,22 @@ class PaymentCompletePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(Icons.verified, size: 70, color: Colors.green.shade600),
+            const SizedBox(height: 16),
             const Text(
               'Payment Completed Successfully!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
+            Text(
+              'Paid: ${_formatRs(paidAmount)}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
             const Text(
               'Your order has been placed',
-              style: TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 15),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
@@ -337,7 +446,7 @@ class PaymentCompletePage extends StatelessWidget {
                 ),
               ),
               child: const Text(
-                'Continue ',
+                'Back to Cart',
                 style: TextStyle(fontSize: 16),
               ),
             ),

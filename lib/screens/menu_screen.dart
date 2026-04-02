@@ -14,6 +14,54 @@ class _MenuScreenState extends State<MenuScreen> {
   bool _isLoading = true;
   String? _error;
 
+  String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(0)}';
+
+  Widget _menuImage(FoodItem item) {
+    if (item.imageUrl.trim().isEmpty) {
+      return _fallbackImage(item);
+    }
+
+    return Image.network(
+      item.imageUrl,
+      height: 128,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          height: 128,
+          color: Colors.orange.shade100,
+          alignment: Alignment.center,
+          child: const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => _fallbackImage(item),
+    );
+  }
+
+  Widget _fallbackImage(FoodItem item) {
+    final fallbackIcon = item.imageIcon.trim().isEmpty ? '🍽' : item.imageIcon;
+    return Container(
+      height: 128,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.shade300, Colors.deepOrange.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        fallbackIcon,
+        style: const TextStyle(fontSize: 52),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,7 +123,7 @@ class _MenuScreenState extends State<MenuScreen> {
           crossAxisCount: 2,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 0.68,
+          childAspectRatio: 0.66,
         ),
         itemCount: _foodItems.length,
         itemBuilder: (context, index) {
@@ -94,31 +142,13 @@ class _MenuScreenState extends State<MenuScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(15),
                       topRight: Radius.circular(15),
                     ),
-                    child: Image.network(
-                      item.imageUrl,
-                      height: 110,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 110,
-                          color: Colors.orange.shade100,
-                          child: Center(
-                            child: Text(
-                              item.imageIcon,
-                              style: const TextStyle(fontSize: 50),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    child: _menuImage(item),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.all(10),
                     child: Column(
@@ -131,14 +161,14 @@ class _MenuScreenState extends State<MenuScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '₹${item.price.toStringAsFixed(0)}',
+                          _formatRs(item.price),
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.orange.shade700,
                           ),
@@ -150,7 +180,7 @@ class _MenuScreenState extends State<MenuScreen> {
                             onPressed: () async {
                               try {
                                 await ApiService.addToCart(item.id);
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('${item.name} added to cart'),
@@ -159,7 +189,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                   ),
                                 );
                               } catch (e) {
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
@@ -174,13 +204,13 @@ class _MenuScreenState extends State<MenuScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              padding:  EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 vertical: 8,
                               ),
                               minimumSize: const Size(double.infinity, 32),
                             ),
                             child: const Text(
-                              'Add',
+                              'Add to Cart',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,

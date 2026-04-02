@@ -14,6 +14,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool _isLoading = true;
   String? _error;
 
+  String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(2)}';
+
   @override
   void initState() {
     super.initState();
@@ -120,7 +122,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             ),
                           ),
                           Text(
-                            '\$${order.total.toStringAsFixed(2)}',
+                            _formatRs(order.total),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -139,12 +141,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                title: const Text('Receipt'),
+                                title: const Text('Payment Receipt'),
                                 content: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Campus Canteen'),
+                                    const Text(
+                                      'Campus Canteen',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
                                     const Divider(),
                                     Text('Order #${order.id}'),
                                     Text('Date: ${order.date}'),
@@ -156,10 +161,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         const Text('Total:'),
-                                        Text('\$${order.total.toStringAsFixed(2)}'),
+                                        Text(_formatRs(order.total)),
                                       ],
                                     ),
                                     const SizedBox(height: 10),
+                                    const Text('Mode: Campus Gateway'),
+                                    const SizedBox(height: 4),
                                     const Text('Thank you for ordering!'),
                                   ],
                                 ),
