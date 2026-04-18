@@ -23,9 +23,9 @@ router.post('/register', async (req, res, next) => {
   try {
     const { name, email, password, phone, location } = req.body;
 
-    if (!name || !email || !password || !phone || !location) {
+    if (!name || !email || !password) {
       return res.status(400).json({
-        message: 'name, email, password, phone and location are required',
+        message: 'name, email and password are required',
       });
     }
 
@@ -38,8 +38,8 @@ router.post('/register', async (req, res, next) => {
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      phone: phone.trim(),
-      location: location.trim(),
+      phone: typeof phone === 'string' ? phone.trim() : '',
+      location: typeof location === 'string' ? location.trim() : '',
       passwordHash,
     });
 
@@ -57,6 +57,12 @@ router.post('/register', async (req, res, next) => {
       },
     });
   } catch (error) {
+    if (error && error.code === 11000) {
+      const duplicateField = Object.keys(error.keyPattern || {})[0] || 'field';
+      return res.status(409).json({
+        message: `${duplicateField} already registered`,
+      });
+    }
     return next(error);
   }
 });

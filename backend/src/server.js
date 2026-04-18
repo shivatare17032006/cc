@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth.routes');
 const menuRoutes = require('./routes/menu.routes');
 const cartRoutes = require('./routes/cart.routes');
 const orderRoutes = require('./routes/order.routes');
+const User = require('./models/user.model');
 
 dotenv.config();
 
@@ -44,6 +45,14 @@ async function startServer() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected');
+
+    try {
+      await User.syncIndexes();
+      console.log('User indexes synced');
+    } catch (indexError) {
+      console.warn('User index sync skipped:', indexError.message);
+    }
+
     app.listen(port, '0.0.0.0', () => {
       console.log(`Backend running on http://0.0.0.0:${port}`);
     });
