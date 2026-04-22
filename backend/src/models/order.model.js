@@ -30,6 +30,11 @@ const orderSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     items: { type: [orderItemSchema], required: true },
     totalAmount: { type: Number, required: true, min: 0 },
+    status: {
+      type: String,
+      enum: ['Pending', 'Preparing', 'Ready', 'Completed'],
+      default: 'Pending',
+    },
   },
   {
     timestamps: true,

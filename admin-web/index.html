@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus Canteen Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-layer"></div>
+
+    <main class="container">
+      <section id="loginCard" class="card login-card">
+        <h1>Admin Panel</h1>
+        <p>Sign in with an admin account to manage orders and operations.</p>
+        <form id="loginForm" class="grid-form">
+          <label>
+            Email
+            <input id="email" type="email" required placeholder="admin@example.com" />
+          </label>
+          <label>
+            Password
+            <input id="password" type="password" required placeholder="••••••••" />
+          </label>
+          <label>
+            API Base URL
+            <input id="apiBase" type="url" placeholder="https://cc-3jx1.onrender.com" />
+          </label>
+          <button type="submit">Sign In</button>
+        </form>
+        <p id="loginError" class="error"></p>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <header class="topbar">
+          <div>
+            <h2>Campus Canteen Operations</h2>
+            <p id="welcomeText"></p>
+          </div>
+          <button id="logoutBtn" class="ghost">Logout</button>
+        </header>
+
+        <section class="stats-grid" id="statsGrid"></section>
+
+        <section class="panel-grid">
+          <article class="card">
+            <h3>Orders Queue</h3>
+            <p class="muted">Update order status as food is prepared.</p>
+            <div id="ordersWrap" class="table-wrap"></div>
+          </article>
+
+          <article class="card">
+            <h3>Complaints</h3>
+            <p class="muted">Track and resolve customer complaints.</p>
+            <div id="complaintsWrap" class="table-wrap"></div>
+          </article>
+
+          <article class="card users-card">
+            <h3>Users</h3>
+            <p class="muted">Latest registered users.</p>
+            <div id="usersWrap" class="table-wrap"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
