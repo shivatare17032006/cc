@@ -13,19 +13,27 @@ class CartItem {
     this.quantity = 1,
   });
 
+  static double _readPrice(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
+  static int _readQuantity(dynamic value) {
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString()) ?? 1;
+  }
+
   factory CartItem.fromJson(Map<String, dynamic> json) {
-    final dynamic priceValue = json['price'];
-    final dynamic quantityValue = json['quantity'];
     return CartItem(
       id: (json['menuItemId'] ?? json['_id'] ?? json['id'] ?? '').toString(),
       name: (json['name'] ?? '').toString(),
-      price: priceValue is num
-          ? priceValue.toDouble()
-          : double.tryParse(priceValue.toString()) ?? 0,
+      price: _readPrice(json['price']),
       imageIcon: (json['imageIcon'] ?? '').toString(),
-      quantity: quantityValue is num
-          ? quantityValue.toInt()
-          : int.tryParse(quantityValue.toString()) ?? 1,
+      quantity: _readQuantity(json['quantity']),
     );
   }
 }

@@ -9,7 +9,6 @@ import '../models/food_item.dart';
 import '../models/order.dart';
 
 class ApiService {
-
   static const String _configuredBaseUrl =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
   static const String _mobileBaseUrl = 'http://10.118.14.218:5000/api';
@@ -40,6 +39,8 @@ class ApiService {
 
   static bool get isLoggedIn => _token != null && _token!.isNotEmpty;
 
+  static Uri _uri(String path) => Uri.parse('$_baseUrl$path');
+
   static Map<String, String> _headers({bool auth = false}) {
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (auth && _token != null) {
@@ -57,10 +58,49 @@ class ApiService {
     }
   }
 
+  static Future<http.Response> _get(String path, {bool auth = false}) {
+    return http.get(_uri(path), headers: _headers(auth: auth));
+  }
+
+  static Future<http.Response> _post(
+    String path, {
+    bool auth = false,
+    Object? body,
+  }) {
+    return http.post(
+      _uri(path),
+      headers: _headers(auth: auth),
+      body: body,
+    );
+  }
+
+  static Future<http.Response> _patch(
+    String path, {
+    bool auth = false,
+    Object? body,
+  }) {
+    return http.patch(
+      _uri(path),
+      headers: _headers(auth: auth),
+      body: body,
+    );
+  }
+
+  static Future<http.Response> _delete(String path, {bool auth = false}) {
+    return http.delete(_uri(path), headers: _headers(auth: auth));
+  }
+
+  static List<Map<String, dynamic>> _decodeMapList(String body) {
+    return (jsonDecode(body) as List<dynamic>).whereType<Map<String, dynamic>>().toList();
+  }
+
+  static Map<String, dynamic> _decodeMap(String body) {
+    return jsonDecode(body) as Map<String, dynamic>;
+  }
+
   static Future<void> login({required String email, required String password}) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/auth/login'),
-      headers: _headers(),
+    final response = await _post(
+      '/auth/login',
       body: jsonEncode({'email': email, 'password': password}),
     );
 
@@ -84,9 +124,8 @@ class ApiService {
     required String phone,
     required String location,
   }) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/auth/register'),
-      headers: _headers(),
+    final response = await _post(
+      '/auth/register',
       body: jsonEncode({
         'name': name,
         'email': email,
@@ -100,7 +139,7 @@ class ApiService {
       throw Exception(_parseError(response));
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeMap(response.body);
     final token = (body['token'] ?? '').toString();
     if (token.isEmpty) {
       throw Exception('Invalid registration response');
@@ -110,40 +149,27 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> getMyProfile() async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/auth/me'),
-      headers: _headers(auth: true),
-    );
+    final response = await _get('/auth/me', auth: true);
 
     if (response.statusCode != 200) {
       throw Exception(_parseError(response));
     }
 
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    return _decodeMap(response.body);
   }
 
   static Future<List<FoodItem>> getMenuItems() async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/menu'),
-      headers: _headers(),
-    );
+    final response = await _get('/menu');
 
     if (response.statusCode != 200) {
       throw Exception(_parseError(response));
     }
 
-    final list = jsonDecode(response.body) as List<dynamic>;
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(FoodItem.fromJson)
-        .toList();
+    return _decodeMapList(response.body).map(FoodItem.fromJson).toList();
   }
 
   static Future<void> seedMenu() async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/menu/seed'),
-      headers: _headers(),
-    );
+    final response = await _post('/menu/seed');
 
     if (response.statusCode != 201) {
       throw Exception(_parseError(response));
@@ -151,9 +177,9 @@ class ApiService {
   }
 
   static Future<void> addToCart(String menuItemId) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/cart/items'),
-      headers: _headers(auth: true),
+    final response = await _post(
+      '/cart/items',
+      auth: true,
       body: jsonEncode({'menuItemId': menuItemId, 'quantity': 1}),
     );
 
@@ -163,16 +189,13 @@ class ApiService {
   }
 
   static Future<List<CartItem>> getCartItems() async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/cart'),
-      headers: _headers(auth: true),
-    );
+    final response = await _get('/cart', auth: true);
 
     if (response.statusCode != 200) {
       throw Exception(_parseError(response));
     }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final body = _decodeMap(response.body);
     final list = (body['items'] as List<dynamic>? ?? []);
     return list
         .whereType<Map<String, dynamic>>()
@@ -181,9 +204,9 @@ class ApiService {
   }
 
   static Future<void> updateCartQuantity(String menuItemId, int quantity) async {
-    final response = await http.patch(
-      Uri.parse('$_baseUrl/cart/items/$menuItemId'),
-      headers: _headers(auth: true),
+    final response = await _patch(
+      '/cart/items/$menuItemId',
+      auth: true,
       body: jsonEncode({'quantity': quantity}),
     );
 
@@ -193,10 +216,7 @@ class ApiService {
   }
 
   static Future<void> removeFromCart(String menuItemId) async {
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/cart/items/$menuItemId'),
-      headers: _headers(auth: true),
-    );
+    final response = await _delete('/cart/items/$menuItemId', auth: true);
 
     if (response.statusCode != 200) {
       throw Exception(_parseError(response));
@@ -204,10 +224,7 @@ class ApiService {
   }
 
   static Future<void> placeOrder() async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/orders'),
-      headers: _headers(auth: true),
-    );
+    final response = await _post('/orders', auth: true);
 
     if (response.statusCode != 201) {
       throw Exception(_parseError(response));
@@ -215,19 +232,120 @@ class ApiService {
   }
 
   static Future<List<Order>> getOrders() async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/orders'),
-      headers: _headers(auth: true),
+    final response = await _get('/orders', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMapList(response.body).map(Order.fromJson).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getComplaints() async {
+    final response = await _get('/complaints', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMapList(response.body);
+  }
+
+  static Future<Map<String, dynamic>> submitComplaint({
+    required String type,
+    required String description,
+    required String priority,
+    required bool isAnonymous,
+    required String contactEmail,
+  }) async {
+    final response = await _post(
+      '/complaints',
+      auth: true,
+      body: jsonEncode({
+        'type': type,
+        'description': description,
+        'priority': priority,
+        'isAnonymous': isAnonymous,
+        'contactEmail': contactEmail,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
+  }
+
+  static Future<Map<String, dynamic>> resolveComplaint(String complaintDbId) async {
+    final response = await _patch('/complaints/$complaintDbId/resolve', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
+  }
+
+  static Future<List<int>> getUnavailableTables({
+    required String bookingDate,
+    required String timeSlot,
+  }) async {
+    final response = await _get(
+      '/bookings/availability?date=$bookingDate&slot=${Uri.encodeQueryComponent(timeSlot)}',
+      auth: true,
     );
 
     if (response.statusCode != 200) {
       throw Exception(_parseError(response));
     }
 
-    final list = jsonDecode(response.body) as List<dynamic>;
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(Order.fromJson)
-        .toList();
+    final body = _decodeMap(response.body);
+    final list = (body['unavailableTables'] as List<dynamic>? ?? []);
+    return list.map((value) => int.tryParse(value.toString()) ?? 0).where((value) => value > 0).toList();
+  }
+
+  static Future<Map<String, dynamic>> createBooking({
+    required String bookingDate,
+    required String timeSlot,
+    required int tableNumber,
+    required int partySize,
+  }) async {
+    final response = await _post(
+      '/bookings',
+      auth: true,
+      body: jsonEncode({
+        'bookingDate': bookingDate,
+        'timeSlot': timeSlot,
+        'tableNumber': tableNumber,
+        'partySize': partySize,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
+  }
+
+  static Future<List<Map<String, dynamic>>> getMyBookings() async {
+    final response = await _get('/bookings/my', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMapList(response.body);
+  }
+
+  static Future<Map<String, dynamic>> releaseBooking(String bookingId) async {
+    final response = await _patch('/bookings/$bookingId/release', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
   }
 }

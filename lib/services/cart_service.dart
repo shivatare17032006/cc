@@ -5,31 +5,27 @@ class CartService {
   static List<CartItem> _cartItems = [];
 
   static void addToCart(FoodItem foodItem) {
-    final existingItem = _cartItems.firstWhere(
-          (item) => item.id == foodItem.id,
-      orElse: () => CartItem(
-        id: '',
-        name: '',
-        price: 0,
-        imageIcon: '',
-      ),
-    );
+    final existingItem = _cartItems.cast<CartItem?>().firstWhere(
+          (item) => item?.id == foodItem.id,
+          orElse: () => null,
+        );
 
-    if (existingItem.id.isNotEmpty) {
+    if (existingItem != null) {
       existingItem.quantity++;
-    } else {
-      _cartItems.add(CartItem(
+      return;
+    }
+
+    _cartItems.add(
+      CartItem(
         id: foodItem.id,
         name: foodItem.name,
         price: foodItem.price,
         imageIcon: foodItem.imageIcon,
-      ));
-    }
+      ),
+    );
   }
 
-  static List<CartItem> getCartItems() {
-    return List.from(_cartItems);
-  }
+  static List<CartItem> getCartItems() => List.from(_cartItems);
 
   static void removeFromCart(String id) {
     _cartItems.removeWhere((item) => item.id == id);
@@ -39,9 +35,10 @@ class CartService {
     final item = _cartItems.firstWhere((item) => item.id == id);
     if (newQuantity <= 0) {
       removeFromCart(id);
-    } else {
-      item.quantity = newQuantity;
+      return;
     }
+
+    item.quantity = newQuantity;
   }
 
   static void clearCart() {

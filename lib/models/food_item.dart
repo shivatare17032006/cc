@@ -15,14 +15,18 @@ class FoodItem {
     required this.imageUrl,
   });
 
+  static double _readPrice(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
   factory FoodItem.fromJson(Map<String, dynamic> json) {
-    final dynamic priceValue = json['price'];
     return FoodItem(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       name: (json['name'] ?? '').toString(),
-      price: priceValue is num
-          ? priceValue.toDouble()
-          : double.tryParse(priceValue.toString()) ?? 0,
+      price: _readPrice(json['price']),
       description: (json['description'] ?? '').toString(),
       imageIcon: (json['imageIcon'] ?? '').toString(),
       imageUrl: (json['imageUrl'] ?? '').toString(),

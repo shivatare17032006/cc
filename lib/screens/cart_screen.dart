@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../services/api_service.dart';
+import 'home_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -15,6 +16,174 @@ class _CartScreenState extends State<CartScreen> {
   String? _error;
 
   String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(2)}';
+
+  BoxDecoration _panelDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withValues(alpha: 0.2),
+          spreadRadius: 2,
+          blurRadius: 10,
+        ),
+      ],
+    );
+  }
+
+  void _showMessage(String text, {Color backgroundColor = Colors.red}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: backgroundColor,
+      ),
+    );
+  }
+
+  Widget _buildEmptyCart() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.shopping_cart,
+            size: 80,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Your cart is empty',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.shade500,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            child: const Text('Browse Menu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCartItem(CartItem item) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ListTile(
+        leading: Text(
+          item.imageIcon,
+          style: const TextStyle(fontSize: 40),
+        ),
+        title: Text(
+          item.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text('${_formatRs(item.price)} x ${item.quantity}'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.remove, color: Colors.red),
+              onPressed: () async {
+                await ApiService.updateCartQuantity(item.id, item.quantity - 1);
+                await _loadCart();
+              },
+            ),
+            Text('${item.quantity}', style: const TextStyle(fontSize: 16)),
+            IconButton(
+              icon: const Icon(Icons.add, color: Colors.green),
+              onPressed: () async {
+                await ApiService.updateCartQuantity(item.id, item.quantity + 1);
+                await _loadCart();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                await ApiService.removeFromCart(item.id);
+                await _loadCart();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckoutBar() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _panelDecoration(),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Amount:',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                _formatRs(_totalPrice),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PaymentPage(
+                      totalAmount: _totalPrice,
+                      itemCount: _cartItems.length,
+                    ),
+                  ),
+                ).then((_) => _loadCart());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade500,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text(
+                'Proceed to Payment',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -74,167 +243,20 @@ class _CartScreenState extends State<CartScreen> {
                     ],
                   ),
                 )
-              : _cartItems.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.shopping_cart,
-              size: 80,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Your cart is empty',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange.shade500,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: const Text('Browse Menu'),
-            ),
-          ],
-        ),
-      )
-          : Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _cartItems.length,
-              itemBuilder: (context, index) {
-                final item = _cartItems[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: ListTile(
-                    leading: Text(
-                      item.imageIcon,
-                      style: const TextStyle(fontSize: 40),
-                    ),
-                    title: Text(
-                      item.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      '${_formatRs(item.price)} x ${item.quantity}',
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, color: Colors.red),
-                          onPressed: () async {
-                            await ApiService.updateCartQuantity(item.id, item.quantity - 1);
-                            await _loadCart();
-                          },
-                        ),
-                        Text(
-                          '${item.quantity}',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add, color: Colors.green),
-                          onPressed: () async {
-                            await ApiService.updateCartQuantity(item.id, item.quantity + 1);
-                            await _loadCart();
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () async {
-                            await ApiService.removeFromCart(item.id);
-                            await _loadCart();
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.2),
-                  spreadRadius: 2,
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Amount:',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      _formatRs(_totalPrice),
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PaymentPage(
-                            totalAmount: _totalPrice,
-                            itemCount: _cartItems.length,
+                : _cartItems.isEmpty
+                    ? _buildEmptyCart()
+                    : Column(
+                        children: [
+                          Expanded(
+                            child: ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _cartItems.length,
+                              itemBuilder: (context, index) => _buildCartItem(_cartItems[index]),
+                            ),
                           ),
-                        ),
-                      ).then((_) => _loadCart());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade500,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                          _buildCheckoutBar(),
+                        ],
                       ),
-                    ),
-                    child: const Text(
-                      'Proceed to Payment',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

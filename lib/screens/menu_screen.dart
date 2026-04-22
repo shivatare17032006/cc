@@ -44,6 +44,74 @@ class _MenuScreenState extends State<MenuScreen> {
     'guava juice': 'assets/menu/guava_juice.png',
   };
 
+  static const Map<String, double> _itemPriceMap = {
+    'sabudana vada': 45,
+    'vada pav': 35,
+    'bread pattis': 30,
+    'idli': 40,
+    'rava paratha': 55,
+    'aloo paratha': 60,
+    'methi paratha': 60,
+    'palak paratha': 60,
+    'sandwich': 50,
+    'cold coffee': 70,
+    'orange juice': 55,
+    'plain lassi': 45,
+    'watermelon juice': 50,
+    'anjir shake': 90,
+    'papaya juice': 50,
+    'mango lassi': 55,
+    'dhokla': 40,
+    'paneer paratha': 75,
+    'bajra paratha': 65,
+    'oreo shake': 95,
+    'chiku shake': 85,
+    'mix fruit rabdi': 95,
+    'plain rabdi': 80,
+    'mango rabdi': 90,
+    'limbu sarbat': 30,
+    'mosambi juice': 55,
+    'guava juice': 55,
+  };
+
+  void _showMessage(String text, {Color backgroundColor = Colors.green}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: backgroundColor,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  String _titleCase(String value) {
+    return value
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
+  }
+
+  List<FoodItem> _fallbackMenuItems() {
+    final entries = _itemImageMap.entries.toList();
+    return List.generate(entries.length, (index) {
+      final key = entries[index].key;
+      return FoodItem(
+        id: 'local-$index',
+        name: _titleCase(key),
+        price: _itemPriceMap[key] ?? 50,
+        description: 'Freshly prepared canteen special',
+        imageIcon: '🍽',
+        imageUrl: entries[index].value,
+      );
+    });
+  }
+
+  bool _hasAllExpectedItems(List<FoodItem> items) {
+    final names = items.map((item) => item.name.trim().toLowerCase()).toSet();
+    return _itemImageMap.keys.every(names.contains);
+  }
+
   String _formatRs(double amount) => 'Rs ${amount.toStringAsFixed(0)}';
 
   String _resolvedImageUrl(FoodItem item) {
@@ -58,8 +126,7 @@ class _MenuScreenState extends State<MenuScreen> {
       return '';
     }
 
-    // source.unsplash can throttle/redirect in a way that often fails in-app.
-    // Use a stable, keyword-based image source to keep images food/drink relevant.
+
     if (rawUrl.contains('source.unsplash.com')) {
       return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=1200&q=80';
     }
@@ -127,6 +194,129 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  Widget _buildMenuCard(FoodItem item) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: Colors.white,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(15),
+                topRight: Radius.circular(15),
+              ),
+              child: _menuImage(item),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _formatRs(item.price),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          await ApiService.addToCart(item.id);
+                          if (!context.mounted) return;
+                          _showMessage('${item.name} added to cart');
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          _showMessage(
+                            e.toString().replaceFirst('Exception: ', ''),
+                            backgroundColor: Colors.red,
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade500,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        minimumSize: const Size(double.infinity, 32),
+                      ),
+                      child: const Text(
+                        'Add to Cart',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _loadMenu,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.66,
+      ),
+      itemCount: _foodItems.length,
+      itemBuilder: (context, index) => _buildMenuCard(_foodItems[index]),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -141,20 +331,35 @@ class _MenuScreenState extends State<MenuScreen> {
 
     try {
       var items = await ApiService.getMenuItems();
-      if (items.isEmpty) {
+
+      if (items.isEmpty || !_hasAllExpectedItems(items)) {
         await ApiService.seedMenu();
         items = await ApiService.getMenuItems();
+      }
+
+      if (items.isEmpty) {
+        items = _fallbackMenuItems();
       }
 
       if (!mounted) return;
       setState(() {
         _foodItems = items;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _foodItems = _fallbackMenuItems();
+        _error = null;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not load menu from server. Showing local menu items.',
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -166,132 +371,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.orange.shade50,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _loadMenu,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : GridView.builder(
-        padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.66,
-        ),
-        itemCount: _foodItems.length,
-        itemBuilder: (context, index) {
-          final item = _foodItems[index];
-          return Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                color: Colors.white,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(15),
-                      topRight: Radius.circular(15),
-                    ),
-                    child: _menuImage(item),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _formatRs(item.price),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              try {
-                                await ApiService.addToCart(item.id);
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('${item.name} added to cart'),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 1),
-                                  ),
-                                );
-                              } catch (e) {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      e.toString().replaceFirst('Exception: ', ''),
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange.shade500,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                              ),
-                              minimumSize: const Size(double.infinity, 32),
-                            ),
-                            child: const Text(
-                              'Add to Cart',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+      body: _buildBody(),
     );
   }
 }

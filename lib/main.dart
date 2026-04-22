@@ -11,15 +11,19 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  ThemeData _buildTheme() {
+    return ThemeData(
+      primarySwatch: Colors.orange,
+      fontFamily: 'Roboto',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Campus Canteen',
-      theme: ThemeData(
-        primarySwatch: Colors.orange,
-        fontFamily: 'Roboto',
-      ),
-      home: const LoginScreen(),
+      theme: _buildTheme(),
+      home: LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
