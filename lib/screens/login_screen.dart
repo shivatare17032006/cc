@@ -14,6 +14,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  void _showMessage(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text)),
+    );
+  }
 
   @override
   void initState() {
@@ -39,9 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       await ApiService.clearToken();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Session expired. Please login again.')),
-      );
+      _showMessage('Session expired. Please login again.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -61,9 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
-      );
+      _showMessage('Please enter email and password');
       return;
     }
 
@@ -81,9 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -145,8 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: TextField(
                           controller: _emailController,
                           decoration: InputDecoration(
-                            hintText: "abc@xyz.com",
-                            labelText: "Email",
+                            hintText: 'abc@xyz.com',
+                            labelText: 'Email',
                             prefixIcon: const Icon(Icons.email),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(20),
@@ -159,9 +160,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.all(12),
                         child: TextField(
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           decoration: InputDecoration(
-                            suffixIcon: const Icon(Icons.remove_red_eye),
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                            ),
                             labelText: "Password",
                             prefixIcon: const Icon(Icons.lock),
                             border: OutlineInputBorder(
@@ -224,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
                             },
                             child: Text(
-                              "Register",
+                              'Register',
                               style: TextStyle(
                                 color: Colors.orange.shade500,
                                 fontSize: 15,
