@@ -21,6 +21,8 @@ const complaintSchema = new mongoose.Schema(
     contactEmail: { type: String, default: '', trim: true },
     isAnonymous: { type: Boolean, default: false },
     status: { type: String, enum: ['Open', 'Resolved'], default: 'Open' },
+    ownerReply: { type: String, default: '', trim: true },
+    repliedAt: { type: Date },
   },
   {
     timestamps: true,

@@ -11,33 +11,44 @@ import '../models/order.dart';
 class ApiService {
   static const String _configuredBaseUrl =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
-  static const String _mobileBaseUrl = 'http://10.118.14.218:5000/api';
-  static const String _webBaseUrl = 'http://localhost:5000/api';
+  static const String _mobileBaseUrl = 'https://cc-3jx1.onrender.com/api';
+  static const String _webBaseUrl = 'https://cc-3jx1.onrender.com/api';
   static String get _baseUrl =>
       _configuredBaseUrl.isNotEmpty
           ? _configuredBaseUrl
           : (kIsWeb ? _webBaseUrl : _mobileBaseUrl);
 
   static String? _token;
+  static String? _userRole;
 
   static Future<void> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('auth_token');
+    _userRole = prefs.getString('user_role');
   }
 
-  static Future<void> saveToken(String token) async {
+  static Future<void> saveToken(String token, {String? role}) async {
     _token = token;
+    _userRole = role;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
+    if (role == null || role.isEmpty) {
+      await prefs.remove('user_role');
+    } else {
+      await prefs.setString('user_role', role);
+    }
   }
 
   static Future<void> clearToken() async {
     _token = null;
+    _userRole = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('user_role');
   }
 
   static bool get isLoggedIn => _token != null && _token!.isNotEmpty;
+  static String get userRole => _userRole ?? 'student';
 
   static Uri _uri(String path) => Uri.parse('$_baseUrl$path');
 
@@ -98,7 +109,7 @@ class ApiService {
     return jsonDecode(body) as Map<String, dynamic>;
   }
 
-  static Future<void> login({required String email, required String password}) async {
+  static Future<Map<String, dynamic>> login({required String email, required String password}) async {
     final response = await _post(
       '/auth/login',
       body: jsonEncode({'email': email, 'password': password}),
@@ -114,7 +125,10 @@ class ApiService {
       throw Exception('Invalid login response');
     }
 
-    await saveToken(token);
+    final user = (body['user'] as Map<String, dynamic>? ?? {});
+    final role = (user['role'] ?? '').toString();
+    await saveToken(token, role: role);
+    return body;
   }
 
   static Future<void> register({
@@ -145,7 +159,9 @@ class ApiService {
       throw Exception('Invalid registration response');
     }
 
-    await saveToken(token);
+    final user = (body['user'] as Map<String, dynamic>? ?? {});
+    final role = (user['role'] ?? '').toString();
+    await saveToken(token, role: role);
   }
 
   static Future<Map<String, dynamic>> getMyProfile() async {
@@ -155,7 +171,14 @@ class ApiService {
       throw Exception(_parseError(response));
     }
 
-    return _decodeMap(response.body);
+    final profile = _decodeMap(response.body);
+    final role = (profile['role'] ?? '').toString();
+    if (role.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      _userRole = role;
+      await prefs.setString('user_role', role);
+    }
+    return profile;
   }
 
   static Future<List<FoodItem>> getMenuItems() async {
@@ -241,6 +264,43 @@ class ApiService {
     return _decodeMapList(response.body).map(Order.fromJson).toList();
   }
 
+  static Future<List<Map<String, dynamic>>> getOwnerOrders() async {
+    final response = await _get('/orders/owner', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMapList(response.body);
+  }
+
+  static Future<Map<String, dynamic>> updateOwnerOrderStatus({
+    required String orderId,
+    required String status,
+  }) async {
+    final response = await _patch(
+      '/orders/owner/$orderId/status',
+      auth: true,
+      body: jsonEncode({'status': status}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getOwnerRevenueDashboard() async {
+    final response = await _get('/orders/owner/dashboard/revenue', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
+  }
+
   static Future<List<Map<String, dynamic>>> getComplaints() async {
     final response = await _get('/complaints', auth: true);
 
@@ -279,6 +339,34 @@ class ApiService {
 
   static Future<Map<String, dynamic>> resolveComplaint(String complaintDbId) async {
     final response = await _patch('/complaints/$complaintDbId/resolve', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
+  }
+
+  static Future<List<Map<String, dynamic>>> getOwnerComplaints() async {
+    final response = await _get('/complaints/owner', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMapList(response.body);
+  }
+
+  static Future<Map<String, dynamic>> replyToComplaint({
+    required String complaintId,
+    required String reply,
+    String status = 'Resolved',
+  }) async {
+    final response = await _patch(
+      '/complaints/owner/$complaintId/reply',
+      auth: true,
+      body: jsonEncode({'reply': reply, 'status': status}),
+    );
 
     if (response.statusCode != 200) {
       throw Exception(_parseError(response));
@@ -341,6 +429,33 @@ class ApiService {
 
   static Future<Map<String, dynamic>> releaseBooking(String bookingId) async {
     final response = await _patch('/bookings/$bookingId/release', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMap(response.body);
+  }
+
+  static Future<List<Map<String, dynamic>>> getOwnerBookings() async {
+    final response = await _get('/bookings/owner', auth: true);
+
+    if (response.statusCode != 200) {
+      throw Exception(_parseError(response));
+    }
+
+    return _decodeMapList(response.body);
+  }
+
+  static Future<Map<String, dynamic>> releaseOwnerBooking({
+    required String bookingId,
+    String reason = 'released-by-owner',
+  }) async {
+    final response = await _patch(
+      '/bookings/owner/$bookingId/release',
+      auth: true,
+      body: jsonEncode({'reason': reason}),
+    );
 
     if (response.statusCode != 200) {
       throw Exception(_parseError(response));

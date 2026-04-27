@@ -80,6 +80,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildOrderTile(Order order) {
+    final statusColor =
+        order.status == 'Done' ? Colors.green : (order.status == 'In Progress' ? Colors.blue : Colors.orange);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
@@ -138,6 +141,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Text(
+                      'Status:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        order.status,
+                        style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -209,3 +233,5 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 }
+
+

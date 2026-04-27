@@ -3,12 +3,14 @@ class Order {
   final String date;
   final double total;
   final List<String> items;
+  final String status;
 
   const Order({
     required this.id,
     required this.date,
     required this.total,
     required this.items,
+    required this.status,
   });
 
   static double _readTotal(dynamic value) {
@@ -37,6 +39,7 @@ class Order {
       date: _shortDate(createdAt),
       total: _readTotal(json['totalAmount'] ?? json['total']),
       items: itemNames,
+      status: (json['status'] ?? 'Pending').toString(),
     );
   }
 }

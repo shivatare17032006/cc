@@ -7,12 +7,25 @@ const { requireAuth } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-function createToken(user) {
+const DEMO_ADMIN_ENABLED = process.env.DEMO_ADMIN_ENABLED === 'true';
+const DEMO_ADMIN_EMAIL = (process.env.DEMO_ADMIN_EMAIL || '').toLowerCase().trim();
+const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD || '';
+const DEMO_ADMIN_USER_ID = process.env.DEMO_ADMIN_USER_ID || '000000000000000000000001';
+const DEMO_ADMIN_NAME = process.env.DEMO_ADMIN_NAME || 'Admin';
+
+function normalizeRole(userLike) {
+  const raw = (userLike?.role ?? userLike?.userType ?? 'student').toString().trim().toLowerCase();
+  if (raw === 'admin') return 'admin';
+  if (raw === 'canteen_owner' || raw === 'canteen-owner' || raw === 'owner') return 'canteen_owner';
+  return 'student';
+}
+
+function createToken(user, role) {
   return jwt.sign(
     {
       userId: user._id.toString(),
       email: user.email,
-      role: user.role,
+      role,
     },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
@@ -43,7 +56,8 @@ router.post('/register', async (req, res, next) => {
       passwordHash,
     });
 
-    const token = createToken(user);
+    const role = normalizeRole(user);
+    const token = createToken(user, role);
 
     return res.status(201).json({
       token,
@@ -53,7 +67,7 @@ router.post('/register', async (req, res, next) => {
         email: user.email,
         phone: user.phone,
         location: user.location,
-        role: user.role,
+        role,
       },
     });
   } catch (error) {
@@ -75,23 +89,57 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ message: 'email and password are required' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Optional demo admin login (disabled by default for production safety).
+    if (
+      DEMO_ADMIN_ENABLED &&
+      DEMO_ADMIN_EMAIL &&
+      DEMO_ADMIN_PASSWORD &&
+      normalizedEmail === DEMO_ADMIN_EMAIL &&
+      password === DEMO_ADMIN_PASSWORD
+    ) {
+      const token = jwt.sign(
+        {
+          userId: DEMO_ADMIN_USER_ID,
+          email: DEMO_ADMIN_EMAIL,
+          role: 'admin',
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      return res.json({
+        token,
+        user: {
+          id: DEMO_ADMIN_USER_ID,
+          name: DEMO_ADMIN_NAME,
+          email: DEMO_ADMIN_EMAIL,
+          role: 'admin',
+        },
+      });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail }).lean();
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    if (!user.passwordHash) {
+    const passwordHash = user.passwordHash || user.password;
+
+    if (!passwordHash) {
       return res.status(400).json({
         message: 'This account is invalid. Please register again with a new email.',
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await bcrypt.compare(password, passwordHash);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const token = createToken(user);
+    const role = normalizeRole(user);
+    const token = createToken(user, role);
 
     return res.json({
       token,
@@ -99,7 +147,7 @@ router.post('/login', async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role,
       },
     });
   } catch (error) {
@@ -109,6 +157,22 @@ router.post('/login', async (req, res, next) => {
 
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
+    if (
+      DEMO_ADMIN_ENABLED &&
+      DEMO_ADMIN_EMAIL &&
+      req.user?.email === DEMO_ADMIN_EMAIL &&
+      req.user?.role === 'admin'
+    ) {
+      return res.json({
+        _id: DEMO_ADMIN_USER_ID,
+        name: DEMO_ADMIN_NAME,
+        email: DEMO_ADMIN_EMAIL,
+        phone: '',
+        location: '',
+        role: 'admin',
+      });
+    }
+
     const user = await User.findById(req.user.userId).select('-passwordHash');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });

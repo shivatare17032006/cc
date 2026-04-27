@@ -1,9 +1,10 @@
 const express = require('express');
 
 const Booking = require('../models/booking.model');
-const { requireAuth } = require('../middleware/auth.middleware');
+const { requireAuth, requireRole } = require('../middleware/auth.middleware');
 
 const router = express.Router();
+const OWNER_ROLES = ['admin', 'canteen_owner'];
 
 const TABLE_CAPACITY = {
   1: 4,
@@ -204,6 +205,85 @@ router.patch('/:id/release', requireAuth, async (req, res, next) => {
     await booking.save();
 
     return res.json(booking);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/owner', requireAuth, requireRole(OWNER_ROLES), async (req, res, next) => {
+  try {
+    await autoReleaseExpiredBookings();
+
+    const bookings = await Booking.find({})
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
+
+    const payload = bookings.map((booking) => ({
+      _id: booking._id,
+      bookingDate: booking.bookingDate,
+      timeSlot: booking.timeSlot,
+      tableNumber: booking.tableNumber,
+      tableLabel: booking.tableLabel,
+      partySize: booking.partySize,
+      status: booking.status,
+      releaseReason: booking.releaseReason,
+      expiresAt: booking.expiresAt,
+      releasedAt: booking.releasedAt,
+      createdAt: booking.createdAt,
+      student: {
+        id: booking.userId?._id,
+        name: booking.userId?.name || 'Unknown',
+        email: booking.userId?.email || '',
+      },
+    }));
+
+    return res.json(payload);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/owner/:id/release', requireAuth, requireRole(OWNER_ROLES), async (req, res, next) => {
+  try {
+    await autoReleaseExpiredBookings();
+
+    const reasonRaw = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+    const reason = reasonRaw || 'released-by-owner';
+
+    const booking = await Booking.findById(req.params.id).populate('userId', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.status !== 'booked') {
+      return res.status(400).json({ message: 'Booking is already released' });
+    }
+
+    booking.status = 'released';
+    booking.releaseReason = reason;
+    booking.releasedAt = new Date();
+
+    await booking.save();
+
+    return res.json({
+      _id: booking._id,
+      bookingDate: booking.bookingDate,
+      timeSlot: booking.timeSlot,
+      tableNumber: booking.tableNumber,
+      tableLabel: booking.tableLabel,
+      partySize: booking.partySize,
+      status: booking.status,
+      releaseReason: booking.releaseReason,
+      expiresAt: booking.expiresAt,
+      releasedAt: booking.releasedAt,
+      createdAt: booking.createdAt,
+      student: {
+        id: booking.userId?._id,
+        name: booking.userId?.name || 'Unknown',
+        email: booking.userId?.email || '',
+      },
+    });
   } catch (error) {
     return next(error);
   }

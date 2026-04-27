@@ -406,6 +406,22 @@ class _ComplaintScreenState extends State<ComplaintScreen> {
                 : 'Contact: ${complaint.contactEmail.isEmpty ? 'Not provided' : complaint.contactEmail}',
             style: const TextStyle(color: Colors.black54),
           ),
+          if (complaint.ownerReply.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Text(
+                'Canteen reply: ${complaint.ownerReply}',
+                style: TextStyle(color: Colors.green.shade900),
+              ),
+            ),
+          ],
           if (complaint.status != 'Resolved') ...[
             const SizedBox(height: 10),
             Align(
@@ -573,6 +589,7 @@ class _ComplaintRecord {
     required this.contactEmail,
     required this.isAnonymous,
     this.status = 'Open',
+    this.ownerReply = '',
   });
 
   factory _ComplaintRecord.fromJson(Map<String, dynamic> json) {
@@ -586,6 +603,7 @@ class _ComplaintRecord {
       contactEmail: (json['contactEmail'] ?? '').toString(),
       isAnonymous: json['isAnonymous'] == true,
       status: (json['status'] ?? 'Open').toString(),
+      ownerReply: (json['ownerReply'] ?? '').toString(),
     );
   }
 
@@ -598,4 +616,5 @@ class _ComplaintRecord {
   final String contactEmail;
   final bool isAnonymous;
   String status;
+  final String ownerReply;
 }

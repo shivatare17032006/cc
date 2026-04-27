@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../owner/screens/owner_home_screen.dart';
+import '../owner/screens/owner_login_screen.dart';
 import 'home_screen.dart';
 import 'registration_screen.dart';
 import '../services/api_service.dart';
@@ -36,13 +38,21 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ApiService.getMyProfile();
+      final profile = await ApiService.getMyProfile();
+      final role = (profile['role'] ?? '').toString();
 
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      if (role == 'admin' || role == 'canteen_owner') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const OwnerHomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } catch (_) {
       await ApiService.clearToken();
       if (!mounted) return;
@@ -73,15 +83,24 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ApiService.login(email: email, password: password);
+      final result = await ApiService.login(email: email, password: password);
+      final user = (result['user'] as Map<String, dynamic>? ?? {});
+      final role = (user['role'] ?? '').toString();
 
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
-      );
+      if (role == 'admin' || role == 'canteen_owner') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OwnerHomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       _showMessage(e.toString().replaceFirst('Exception: ', ''));
@@ -245,6 +264,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ],
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const OwnerLoginScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.storefront),
+                        label: const Text('Canteen Owner Login'),
                       ),
                     ],
                   ),

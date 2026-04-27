@@ -21,14 +21,21 @@ function requireAuth(req, res, next) {
   }
 }
 
-function requireAdmin(req, res, next) {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Admin access required' });
-  }
-  return next();
+function requireRole(allowedRoles = []) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    return next();
+  };
 }
 
 module.exports = {
   requireAuth,
-  requireAdmin,
+  requireRole,
 };

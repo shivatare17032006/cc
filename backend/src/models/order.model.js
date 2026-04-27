@@ -32,9 +32,11 @@ const orderSchema = new mongoose.Schema(
     totalAmount: { type: Number, required: true, min: 0 },
     status: {
       type: String,
-      enum: ['Pending', 'Preparing', 'Ready', 'Completed'],
+      enum: ['Pending', 'In Progress', 'Done'],
       default: 'Pending',
+      index: true,
     },
+    statusUpdatedAt: { type: Date, default: Date.now },
   },
   {
     timestamps: true,
