@@ -12,9 +12,14 @@ function parseBoolean(value) {
   return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on';
 }
 
-const DEMO_ADMIN_ENABLED = parseBoolean(process.env.DEMO_ADMIN_ENABLED);
-const DEMO_ADMIN_EMAIL = (process.env.DEMO_ADMIN_EMAIL || '').toLowerCase().trim();
-const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD || '';
+const DEFAULT_DEMO_ADMIN_ENABLED = true;
+const DEFAULT_DEMO_ADMIN_EMAIL = 'admin@gmail.com';
+const DEFAULT_DEMO_ADMIN_PASSWORD = 'admin';
+const DEMO_ADMIN_ENABLED = process.env.DEMO_ADMIN_ENABLED == null
+  ? DEFAULT_DEMO_ADMIN_ENABLED
+  : parseBoolean(process.env.DEMO_ADMIN_ENABLED);
+const DEMO_ADMIN_EMAIL = (process.env.DEMO_ADMIN_EMAIL || DEFAULT_DEMO_ADMIN_EMAIL).toLowerCase().trim();
+const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD || DEFAULT_DEMO_ADMIN_PASSWORD;
 const DEMO_ADMIN_USER_ID = process.env.DEMO_ADMIN_USER_ID || '000000000000000000000001';
 const DEMO_ADMIN_NAME = process.env.DEMO_ADMIN_NAME || 'Admin';
 
