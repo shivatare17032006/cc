@@ -7,7 +7,12 @@ const { requireAuth } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
-const DEMO_ADMIN_ENABLED = process.env.DEMO_ADMIN_ENABLED === 'true';
+function parseBoolean(value) {
+  const normalized = (value ?? '').toString().trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on';
+}
+
+const DEMO_ADMIN_ENABLED = parseBoolean(process.env.DEMO_ADMIN_ENABLED);
 const DEMO_ADMIN_EMAIL = (process.env.DEMO_ADMIN_EMAIL || '').toLowerCase().trim();
 const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD || '';
 const DEMO_ADMIN_USER_ID = process.env.DEMO_ADMIN_USER_ID || '000000000000000000000001';
